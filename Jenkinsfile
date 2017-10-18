@@ -16,31 +16,21 @@ node {
     }
 
     stage('Version') {
-        sh "echo \'\ninfo.build.version=\'$version >> src/main/resources/application.properties || true"
-        sh "mvn -B -V -U -e versions:set -DnewVersion=$version"
+        
+        "mvn -V"
     }
 
     stage('Build') {
-        sh 'mvn -B -V -U -e clean package'
+       'mvn -B -V -U -e clean package'
     }
 
     stage('Archive') {
         junit allowEmptyResults: true, testResults: '**/target/**/TEST*.xml'
     }
-
-    stage('Deploy') {
-        // Depends on the 'Credentials Binding Plugin'
-        // (https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Binding+Plugin)
-        withCredentials([[$class          : 'UsernamePasswordMultiBinding', credentialsId: 'cloudfoundry',
-                          usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-            sh '''
-                curl -L "https://cli.run.pivotal.io/stable?release=linux64-binary&source=github" | tar -zx
-
-                ./cf api https://api.run.pivotal.io
-                ./cf auth $USERNAME $PASSWORD
-                ./cf target -o bertjan-demo -s development
-                ./cf push
-               '''
-        }
-    }
+	
+	stage 'Gradle Static Analysis'
+		withSonarQubeEnv {
+			"mvn clean sonarqube"
+		}
+    
 }
